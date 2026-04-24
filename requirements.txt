@@ -1,10 +1,7 @@
-streamlit>=1.32.0
-anthropic>=0.25.0
-yfinance>=0.2.40
-pandas>=2.0.0
-numpy>=1.24.0
-reportlab>=4.1.0
-python-pptx>=0.6.23
-python-dotenv>=1.0.0
-ta>=0.11.0
-requests>=2.31.0
+streamlit
+google-generativeai
+yfinance
+pandas
+python-dotenv
+reportlab
+python-pptx
