@@ -5,3 +5,5 @@ pandas
 python-dotenv
 reportlab
 python-pptx
+ta
+numpy
