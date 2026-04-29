@@ -6,43 +6,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def analyze_with_claude(raw_data: dict) -> dict:
-    # Vai buscar a chave que guardaste no Passo 1
     api_key = os.getenv("GEMINI_API_KEY")
+    # Se não houver chave, ele avisa no ecrã em vez de ficar branco
     if not api_key:
-        return {"verdict": {"rating": "FALTA CHAVE NOS SECRETS"}}
+        return {"verdict": {"rating": "ERRO: FALTA CHAVE"}}
 
     genai.configure(api_key=api_key)
-    
-    # Vamos usar o modelo 1.5-flash que é o mais estável para contas novas
     model = genai.GenerativeModel("gemini-1.5-flash")
 
-    # Este "mapa" garante que os quadrados do teu ecrã se enchem de números
     prompt = f"""
-    Atue como analista financeiro senior. Analise estes dados: {json.dumps(raw_data)}
-    Responda APENAS um JSON com esta estrutura (sem texto extra):
-    {{
-      "company_summary": {{"name": "", "business_model": "", "revenue_streams": [], "moat_factors": [], "moat_assessment": ""}},
-      "technical_analysis": {{"current_price": 0.0, "ma50": 0.0, "ma200": 0.0, "price_vs_ma50_pct": 0.0, "price_vs_ma200_pct": 0.0, "rsi_14": 0.0, "rsi_signal": "", "macd_signal": "", "trend_bias": "", "insider_pattern": "", "insider_summary": ""}},
-      "dcf_model": {{"base_fcf_bn": 0.0, "wacc_pct": 0.0, "terminal_growth_rate_pct": 0.0, "growth_assumptions": {{"conservative": 0.0, "base": 0.0, "bull": 0.0}}, "sum_pv_fcfs_bn": 0.0, "pv_terminal_value_bn": 0.0, "enterprise_value_bn": 0.0, "net_debt_bn": 0.0, "equity_value_bn": 0.0, "dcf_intrinsic_value": 0.0, "dcf_notes": ""}},
-      "multiples_analysis": {{"subject": {{"ev_ebitda": 0.0, "pe_ttm": 0.0, "ps_ttm": 0.0, "revenue_growth_yoy_pct": 0.0, "value_growth_score": 0.0}}, "peer_1": {{"name": "", "ticker": "", "ev_ebitda": 0.0, "pe_ttm": 0.0, "ps_ttm": 0.0}}, "peer_2": {{"name": "", "ticker": "", "ev_ebitda": 0.0, "pe_ttm": 0.0, "ps_ttm": 0.0}}, "multiples_implied_price": 0.0, "multiples_methodology": ""}},
-      "bear_case": {{"risk_1": {{"category": "", "description": "", "probability": "", "impact": "", "mitigant": ""}}, "risk_2": {{"category": "", "description": "", "probability": "", "impact": "", "mitigant": ""}}, "risk_3": {{"category": "", "description": "", "probability": "", "impact": "", "mitigant": ""}}}},
-      "verdict": {{"current_price": 0.0, "dcf_target_price": 0.0, "blended_target_price": 0.0, "upside_pct": 0.0, "rating": "ANALYSIS READY", "investment_thesis": ""}}
-    }}
+    Analise estes dados e responda APENAS um JSON: {json.dumps(raw_data)}
+    Use estas chaves: company_summary, technical_analysis, dcf_model, multiples_analysis, bear_case, verdict.
     """
 
     try:
         response = model.generate_content(prompt)
-        res_text = response.text.strip()
-        
-        # Limpa blocos de código se a IA os colocar
-        if "```json" in res_text:
-            res_text = res_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in res_text:
-            res_text = res_text.split("```")[1].split("```")[0].strip()
-            
-        return json.loads(res_text)
+        text = response.text.strip()
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+        return json.loads(text)
     except Exception as e:
-        # Se der erro de ligação, ele mostra o erro no ecrã para sabermos o que é
+        # Se a IA falhar, ele retorna a estrutura para a app não ficar branca
         return {
-            "verdict": {"rating": f"ERRO: {str(e)[:20]}"}
+            "company_summary": {"name": "Erro", "business_model": str(e)},
+            "verdict": {"rating": "ERRO NA API", "current_price": 0, "upside_pct": 0}
         }
