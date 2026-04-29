@@ -1,39 +1,53 @@
 import streamlit as st
 import pandas as pd
 import os
-from dotenv import load_dotenv  # ESTA LINHA É A QUE FALTA!
+import json
+from dotenv import load_dotenv
 from data_fetcher import fetch_all_data
 from claude_agent import analyze_with_claude
+from pdf_generator import generate_pdf
+from pptx_generator import generate_pptx
 
 load_dotenv()
 
+st.set_page_config(page_title="DeepResearch AI", layout="wide")
 
+st.title("📊 DeepResearch: Análise Institucional")
 
-def analyze_with_claude(raw_data: dict) -> dict:
-    api_key = os.getenv("GEMINI_API_KEY")
-    # Se não houver chave, ele avisa no ecrã em vez de ficar branco
-    if not api_key:
-        return {"verdict": {"rating": "ERRO: FALTA CHAVE"}}
+ticker = st.text_input("Introduza o Ticker (ex: NVDA, AAPL):", "").upper()
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-
-    prompt = f"""
-    Analise estes dados e responda APENAS um JSON: {json.dumps(raw_data)}
-    Use estas chaves: company_summary, technical_analysis, dcf_model, multiples_analysis, bear_case, verdict.
-    """
-
-    try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0].strip()
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0].strip()
-        return json.loads(text)
-    except Exception as e:
-        # Se a IA falhar, ele retorna a estrutura para a app não ficar branca
-        return {
-            "company_summary": {"name": "Erro", "business_model": str(e)},
-            "verdict": {"rating": "ERRO NA API", "current_price": 0, "upside_pct": 0}
-        }
+if st.button("Executar Análise"):
+    if ticker:
+        with st.spinner(f"A recolher dados de {ticker}..."):
+            try:
+                # 1. Busca dados do Yahoo Finance
+                raw_data = fetch_all_data(ticker)
+                
+                # 2. IA analisa os dados
+                analysis = analyze_with_claude(raw_data)
+                
+                if "verdict" in analysis:
+                    v = analysis["verdict"]
+                    
+                    # Mostrar Quadrados de Resumo (os que estavam N/A)
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Preço Atual", f"${v.get('current_price', 0)}")
+                    col2.metric("Alvo DCF", f"${v.get('dcf_target_price', 0)}")
+                    col3.metric("Upside", f"{v.get('upside_pct', 0)}%")
+                    col4.subheader(f"Rating: {v.get('rating', 'N/A')}")
+                    
+                    st.success("Análise completa!")
+                    
+                    # Botões de Download
+                    pdf_bytes = generate_pdf(analysis, ticker)
+                    st.download_button("Descarregar PDF", pdf_bytes, f"{ticker}_Report.pdf")
+                    
+                    pptx_bytes = generate_pptx(analysis, ticker)
+                    st.download_button("Descarregar PPTX", pptx_bytes, f"{ticker}_Presentation.pptx")
+                else:
+                    st.error("A IA não conseguiu estruturar os dados.")
+                    
+            except Exception as e:
+                st.error(f"Erro: {e}")
+    else:
+        st.warning("Por favor, insira um ticker.")
