@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
+import os
+from dotenv import load_dotenv  # ESTA LINHA É A QUE FALTA!
 from data_fetcher import fetch_all_data
 from claude_agent import analyze_with_claude
 
 load_dotenv()
+
+
 
 def analyze_with_claude(raw_data: dict) -> dict:
     api_key = os.getenv("GEMINI_API_KEY")
