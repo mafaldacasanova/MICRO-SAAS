@@ -1,7 +1,7 @@
-import google.generativeai as genai
-import json
-import os
-from dotenv import load_dotenv
+import streamlit as st
+import pandas as pd
+from data_fetcher import fetch_all_data
+from claude_agent import analyze_with_claude
 
 load_dotenv()
 
