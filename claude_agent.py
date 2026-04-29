@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Este é o segredo para os números aparecerem: as chaves exatas que o app.py procura
 SCHEMA_INSTRUCTION = """
 Retorna APENAS um objeto JSON com esta estrutura exata:
 {
@@ -21,33 +20,33 @@ Retorna APENAS um objeto JSON com esta estrutura exata:
 def analyze_with_claude(raw_data: dict) -> dict:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("Configuração de segurança: GEMINI_API_KEY não encontrada.")
+        raise RuntimeError("GEMINI_API_KEY não encontrada.")
 
     genai.configure(api_key=api_key)
-    
-    # Configuramos o modelo para ser estritamente JSON
     model = genai.GenerativeModel(
         model_name="gemini-2.5-flash",
         generation_config={"response_mime_type": "application/json"}
     )
 
     ticker = raw_data.get("meta", {}).get("ticker", "UNKNOWN")
-    prompt = f"Analise os dados financeiros para {ticker}: {json.dumps(raw_data)}\n\n{SCHEMA_INSTRUCTION}"
+    prompt = f"Analise {ticker}: {json.dumps(raw_data)}\n\n{SCHEMA_INSTRUCTION}"
 
     try:
         response = model.generate_content(prompt)
         res_text = response.text.strip()
-        
-        # Limpeza de segurança para garantir que o JSON é puro
         if "```json" in res_text:
             res_text = res_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in res_text:
-            res_text = res_text.split("```")[1].split("```")[0].strip()
-            
         return json.loads(res_text)
-    except Exception as e:
-        # Se falhar, tentamos uma última vez sem a restrição de MIME type (plano C)
-        model_fallback = genai.GenerativeModel(model_name="gemini-2.5-flash")
-        response = model_fallback.generate_content(prompt)
+    except Exception:
+        model_retry = genai.GenerativeModel(model_name="gemini-2.5-flash")
+        response = model_retry.generate_content(prompt)
         text = response.text.strip()
         if "
+http://googleusercontent.com/immersive_entry_chip/0
+
+**O que fazer agora:**
+1. Atualiza estes dois ficheiros no GitHub.
+2. Faz **Commit changes**.
+3. Vai à app e faz **Reboot app** no menu "Manage app". 
+
+Deve funcionar tudo à primeira agora!
